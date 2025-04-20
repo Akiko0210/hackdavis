@@ -1,11 +1,26 @@
+import requests
+from bs4 import BeautifulSoup
+from flask import Flask, jsonify, request
 import pymongo
+from pydantic import BaseModel
+from google import genai
 from openai import OpenAI
 import time
 import os
 from dotenv import load_dotenv
+from typing import List
+import json
 
 load_dotenv()
-# Configuration
+
+API_KEY = os.getenv("GEMINI_API_KEY")
+client = genai.Client(api_key=API_KEY)
+
+class Project(BaseModel):
+    title: str
+    summary: str
+    features: List[str]
+
 MONGODB_URI = os.getenv("MONGODB_URI")  # Replace with your Atlas connection string
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Replace with your OpenAI API key
 DB_NAME = "hackdavis"
@@ -18,7 +33,12 @@ db = mongo_client[DB_NAME]
 collection = db[COLLECTION_NAME]
 openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
-# Function to create vector search index
+
+app = Flask(__name__)
+headers = {
+    "User-Agent": "Mozilla/5.0 (compatible; WebScraper/1.0)"
+}
+
 def create_vector_search_index():
     try:
         # Check if index already exists
@@ -80,8 +100,9 @@ def generate_embedding(text):
 
 # Function to combine summary and features for embedding
 def combine_summary_and_features(doc):
-    summary = doc.get("summary", "")
-    features = doc.get("features", [])
+    print(doc, type(doc))
+    summary = doc['summary']
+    features = doc['features']
     # Convert features array to a single string
     features_text = " ".join([str(feature) for feature in features]) if features else ""
     # Combine summary and features, ensuring no empty result
@@ -153,16 +174,136 @@ def perform_vector_search(query_text, limit=5, hackathon_filter=None):
             print(f"Title: {result['title']}, Hackathon: {result['hackathon_title']}, Score: {result['score']}")
             print(f"Summary: {result['summary']}")
             print(f"Features: {result['features']}\n")
+        return results
     except Exception as e:
         print(f"Error performing vector search: {e}")
 
-# Main execution
-if __name__ == "__main__":
-    # Create vector search index
-    create_vector_search_index()
+def gemini_summary(doc):
+    print(doc, type(doc))
+    try:
+        # Create the prompt with project details
+        prompt = f"""
+        Project Title: {doc['title']}
+        Project Description: {doc['description']}
+        Project Story: {doc['story']}
+        
+        Extract the main points in simple words (basically what the project does) and return the data in the following format:
+        {{
+            "title": str,
+            "summary": str,
+            "features": List[str]
+        }}
+        """
 
-    # Add embeddings to documents (including the sample data)
-    add_embedding_to_document()
+        print(prompt, "prompt")
+        
+        # Generate content using Gemini
+        response = client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents=prompt,
+            config={
+                "response_mime_type": "application/json",
+                "response_schema": Project,
+            },
+        )
 
-    sample_query = "AI-powered cooking assistant"  # New query
-    perform_vector_search(sample_query, limit=5, hackathon_filter=None)
+        print(response.text, "ghello")
+        # Parse the response
+        if response.text:
+            try:
+                # Convert the response to a dictionary
+                response_data = json.loads(response.text)
+                
+                # Convert to Project model
+                project = Project(**response_data)
+                
+                print(project)
+                
+                # Convert back to dictionary for MongoDB
+                return project.model_dump()
+            except json.JSONDecodeError as e:
+                print(f"Error parsing JSON response: {e}")
+                return None
+        return None
+    except Exception as e:
+        print(f"Error in gemini_summary: {e}")
+        return None
+
+@app.route('/analyze', methods=['POST'])
+def analyze():
+    data = request.get_json()
+    url = data['url']
+    response = requests.get(url, headers=headers)
+    soup = BeautifulSoup(response.content, "html.parser")
+
+    # Remove the built-with section entirely
+    built_with = soup.find(id="built-with")
+    if built_with:
+        built_with.decompose()
+
+    # Title
+    og_title_tag = soup.find("meta", attrs={"property": "og:title"})
+    og_title = og_title_tag['content'] if og_title_tag else "No Title"
+
+    og_desc_tag = soup.find("meta", attrs={"property": "og:description"})
+    og_desc = og_desc_tag['content'] if og_desc_tag else "No Description"
+
+    app_details = soup.find(id="app-details-left")
+    story = ""
+    github = ""
+
+    if app_details:
+        divs = app_details.find_all("div", recursive=False)
+        
+        if len(divs) >= 2:
+            info_div = divs[1]
+
+            for i in info_div:
+
+                if i.name == "h2":
+                    story = story + i.get_text(strip=True) + ": "
+
+                if i.name == "p":
+                    story += i.get_text(strip=True)
+
+                if i.name == "ul":
+                    story = story + i.get_text(strip=True) + ","
+
+        for a in app_details.find_all("a", href=True):
+            href = a['href']
+            if "https://github.com/" in href:
+                github = href
+
+    if story == "":
+        story = og_desc
+
+    link_tag = soup.select_one(".software-list-content > p > a")
+
+    doc = {
+        "title": og_title,
+        "description": og_desc,
+        "story": story.strip(),
+        "github": github,
+        "url": url,
+        "submitted_to": link_tag.text.strip(),
+        "hackathon": link_tag.get("href")
+    }
+
+    summary_doc = gemini_summary(doc)
+    print(summary_doc, type(summary_doc))
+
+    # Get search results
+    search_results = perform_vector_search(combine_summary_and_features(summary_doc), limit=5, hackathon_filter=None)
+    
+    # Convert MongoDB results to JSON-serializable format
+    json_results = []
+    for result in search_results:
+        # Convert ObjectId to string if present
+        if '_id' in result:
+            result['_id'] = str(result['_id'])
+        json_results.append(result)
+    
+    return jsonify(json_results)
+
+if __name__ == '__main__':
+    app.run(debug=True)
