@@ -1,0 +1,84 @@
+#RecipeMind
+
+## Inspiration
+We often struggle deciding what to cook, especially when overwhelmed by countless recipe options that don't align with our unique tastes or dietary needs. Inspired by this everyday challenge and the innovative potential of robotics, I created RecipeMind—an intelligent, conversational AI that understands your preferences and effortlessly guides you toward delicious meals tailored specifically to you, with the added charm of integration with Turtlebot for kitchen assistance.
+
+## What it does
+RecipeMind leverages OM1 technology to intelligently analyze your personal information, dietary restrictions, and flavor preferences. With this deep understanding, the AI generates personalized recipe recommendations. Beyond just recommendations, RecipeMind also offers an interactive conversational experience, allowing you to chat, request tweaks, and discover new culinary inspirations intuitively. Additionally, RecipeMind integrates with Turtlebot, enabling the interactive conversation and the guidance.
+
+## How we built it
+I built RecipeMind using OM1 technology for data handling and preference learning, combined with OpenAI's advanced language models to enable natural and engaging conversations. Turtlebot integration was achieved using OM1 Zenoh bridge.
+
+## Challenges we ran into
+Integrating OM1's personalized data capabilities with the conversational AI presented unique challenges, particularly around ensuring seamless real-time communication between data handling and natural language processing.
+
+## Accomplishments that we're proud of
+I am incredibly proud to have successfully created a genuinely interactive AI experience that doesn't just suggest generic recipes but actively listens, understands individual preferences, and delivers meaningful culinary guidance. Achieving seamless integration between personalized user data, conversational responsiveness, and practical robotic assistance with Turtlebot was especially rewarding.
+
+## What we learned
+Building RecipeMind deepened our expertise in handling personalized data securely and effectively, optimizing conversational models for user satisfaction, and balancing AI intelligence with intuitive user experience. Integrating Turtlebot further expanded our understanding of practical robotics, real-world navigation in dynamic environments. We've also enhanced our understanding of how technology can profoundly simplify daily decisions.
+
+## What's next for RecipeMind
+Future developments include incorporating more advanced nutritional analytics, recipe sourcing from globally diverse cuisines, and enhanced conversational capabilities through user feedback loops. Additionally, we aim to expand Turtlebot's capabilities for greater kitchen automation, allowing RecipeMind to become a comprehensive kitchen assistant, empowering users to effortlessly enjoy cooking tailored meals every day.
+
+## Built With
+go, python, react
+
+
+
+💡Inspiration
+Remi was inspired by our team member's grandma, Jenny. Jenny is diagnosed with stage 3 of Alzheimer's, which means that in a few years, she won't remember us. She won't remember all the birthdays we celebrated together nor the inside jokes we had together... and she is not the only one.
+
+7 million Americans aged 65 and older are living with Alzheimer’s disease in 2025.
+
+We wanted to address the emotional challenges that come with memory loss, especially for those with Dementia or Alzheimer’s. These individuals often struggle to recognize familiar faces, which can create fear, confusion, and isolation. We wanted to find a way to support memory recall while preserving the dignity and independence of the user. Our goal was to foster connection, comfort, and routine through thoughtful, assistive design.
+
+👀What it does
+Remi is a robot companion with a connected web interface that helps users recall their loved ones and shared memories. When it sees a familiar face, it speaks out their name and shares a personalized memory or message. Family members can upload photos, audio, and text memories through the web platform, which sync directly to Remi through both a Mobile Application and TurtleBot4 (Robot). It creates a bridge between technology and empathy—offering routine, familiarity, and warmth.
+
+⚒️ How we built it
+Website - Utilizing Next.js and Firebase, we made an intuitive dashboard for loved ones and caretakers to utilize to input data for Remi to utilize to support for those with Dementia or Alzheimer's.
+
+Facial Recognition Server - We set up a Python and FastAPI backend server that uses a YOLOv8 model for facial detection, drawing a bounding box which is then run the facial recognition. For facial recognition, we utilize deepFace to generate and utilize embeddings on all the images uploaded to the Firebase storage from the dashboard to be able to recognize loved ones in real time.
+
+Mobile App - Using React Native and Expo, we implemented a mobile application that streams live camera footage to our backend server, allowing us to run our facial detection and recognition models to recognize in real time the individuals in the video feed. Once recognized, information about the person shows up in a minimalistic, easy-to-use UI for those with Dementia or Alzheimers to recall information of their loved ones.
+
+Remi (TurtleBot4) - Built on OpenMind's OM1 Agent, we are able to utilize the TurtleBot4 robot to follow the patient and provide reminders / alerts. Remi, the TurtleBot4 robot, will follow around those with Dementia or Alzheimers, notifying them of reminders such as taking medication with ElevenLabs' text-to-speech and Gemini's text generation that is already included within OpenMind's OM1 Agent Architecture. It also provides alerts for when those with Dementia or Alzheimers enter dangerous situations such as leaving the building with supervision, informing loved ones of potential risks.
+
+🏃‍♂️ Challenges we ran into
+The largest challenge we faced was learning new technologies as we both went outside of our comfort zones:
+
+Michelle is a designer who has only worked with Figma, and she went above and beyond implementing her own web app designs into Next.js! This was her first time!
+
+Daniel is typically a Full-Stack developer; however, he decided to challenge himself by working with AI / ML models, AI Agents, and Robotics which were all fields foreign to him!
+
+Due to exploring new domains, we faced many frustrating blockers, but through staying up all night, we were able to get through them.
+
+👏🏼 Accomplishments that we're proud of
+An accomplishment we are proud of is that we both came out of this project with learning new skill-sets. Rather than relying on our strengths, we decided to push the bounds of what we could do and implemented many ideas within such a short time frame.
+
+🤩 What we learned
+We learned that accessibility isn’t just about physical or visual impairments—it’s about emotional accessibility too. Designing for memory loss taught us to think deeply about familiarity, simplicity, and trust. We also grew our technical skills by combining hardware, machine learning, and UI/UX in a cohesive experience. Most importantly, we learned how powerful design can be in preserving someone’s sense of self.
+
+🤖 What's next for Remi
+We hope to improve Remi’s facial recognition by training with larger datasets and expanding its ability to learn faces over time. We also want to incorporate voice recognition and conversational AI to support two-way interaction. Beyond families, we see Remi being used in memory care homes and hospitals. Long term, we envision Remi becoming a customizable companion that adapts to the evolving needs of memory care.
+
+Built With
+deepface
+docker
+elevenlabs
+expo.io
+fastapi
+figma
+firebase
+gemini
+next.js
+openmind
+python
+reactnative
+ros2
+tailwindcss
+turtlebot4
+typescript
+yolov8
+zenoh
